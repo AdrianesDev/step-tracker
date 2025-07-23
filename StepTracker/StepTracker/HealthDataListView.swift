@@ -49,7 +49,6 @@ struct HealthDataListView: View {
                             metric == .steps ? .numberPad : .decimalPad
                         )
                 }
-                
             }
             .navigationTitle(metric.title)
             .toolbar {
