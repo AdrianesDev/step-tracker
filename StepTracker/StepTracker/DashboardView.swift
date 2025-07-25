@@ -99,13 +99,17 @@ struct DashboardView: View {
                         .fill(
                             Color(.secondarySystemBackground))
                     )
+                    
                 }
                 
             }
             .padding()
             .task {
+//                await hkManager.fetchStepCount()
 //                await hkManager.addSimulatorData()
+                await hkManager.fetchWeights()
                 isShowingPermissionPrimingSheet = !hasSeenPermissionPriming
+           
                 
             }
             .navigationTitle("Dashboard")
