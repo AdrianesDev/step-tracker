@@ -31,12 +31,17 @@ struct DashboardView: View {
     @State private var selectedStat: HealthMetricContext = .steps
     
     var isStepts: Bool { selectedStat == .steps }
+    var avgStepCount: Double {
+        guard !hkManager.stepData.isEmpty else {return 0}
+        let totalSteps = hkManager.stepData.reduce(0) { $0 + $1.value }
+        return totalSteps / Double(hkManager.stepData.count)
+    }
     var body: some View {
         NavigationStack {
             ScrollView {
                 Picker("Selected Stat", selection: $selectedStat) {
                     ForEach(HealthMetricContext.allCases) {
-                        Text($0.title)
+                        Text($0.title).tag($0)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -49,13 +54,13 @@ struct DashboardView: View {
                                         .font(.title3)
                                         .bold()
                                         .foregroundStyle(.pink)
-                                    Text("Avg: 10k Steps")
+                                    Text("Avg: \(Int(avgStepCount)) steps")
                                         .font(.caption)
-                                       
+                                    
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                  
+                                
                             }
                             .padding(.bottom,12)
                         }
@@ -63,14 +68,36 @@ struct DashboardView: View {
                         
                         
                         Chart {
-                            ForEach(hkManager.stepData) { steps in
+                            RuleMark(y: .value("Avarage",avgStepCount))
+                                .foregroundStyle(Color.secondary)
+                                .lineStyle(.init(lineWidth: 1,dash: [5, 10]))
+                            ForEach(HealthMetric.mockData) { steps in
                                 BarMark(
                                     x: .value("Date", steps.date, unit: .day),
                                     y: .value("Steps", steps.value)
                                 )
+                                .foregroundStyle(Color.pink.gradient)
                             }
                         }
                         .frame(height: 150)
+                        .chartXAxis {
+                            AxisMarks {
+                                AxisValueLabel(
+                                    format: .dateTime
+                                        .month(.defaultDigits)
+                                        .day()
+                                )
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(position: .trailing) { value in
+                                AxisGridLine()
+                                    .foregroundStyle(.secondary.opacity(0.3))
+                                AxisValueLabel(
+                                    (value.as(Double.self) ?? 0).formatted(.number.notation(.compactName))
+                                )
+                            }
+                        }
                     }
                     .padding()
                     .background(
@@ -83,18 +110,18 @@ struct DashboardView: View {
                 
                 VStack {
                     VStack(alignment:.leading) {
-
-                            VStack(alignment:.leading){
-                                Label("Averages",systemImage: "calendar")
-                                    .font(.title3)
-                                    .bold()
-                                    .foregroundStyle(.pink)
-                                Text("Last 28 Days")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.bottom,12)
-            
+                        
+                        VStack(alignment:.leading){
+                            Label("Averages",systemImage: "calendar")
+                                .font(.title3)
+                                .bold()
+                                .foregroundStyle(.pink)
+                            Text("Last 28 Days")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.bottom,12)
+                        
                         RoundedRectangle(cornerRadius: 12)
                             .foregroundStyle(.secondary)
                             .frame(height: 240)
@@ -113,10 +140,10 @@ struct DashboardView: View {
             .padding()
             .task {
                 await hkManager.fetchStepCount()
-//                await hkManager.addSimulatorData()
+                //                await hkManager.addSimulatorData()
                 await hkManager.fetchWeights()
                 isShowingPermissionPrimingSheet = !hasSeenPermissionPriming
-           
+                
                 
             }
             .navigationTitle("Dashboard")
@@ -129,7 +156,7 @@ struct DashboardView: View {
                 } content: {
                     HealthKitPermissionPrimingView(hasSeen: $hasSeenPermissionPriming)
                 }
-
+            
         }
         .tint(isStepts ? .pink : .indigo)
     }
